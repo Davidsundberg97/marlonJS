@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes - View All</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        .button-container {
+            margin-bottom: 20px;
+        }
+        .btn-link {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .btn-link:hover {
+            background-color: #0056b3;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        th.sortable {
+            cursor: pointer;
+        }
+        th.sortable:hover {
+            background-color: #0056b3;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .note-title {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .note-title:hover {
+            color: darkblue;
+        }
+    </style>
+</head>
+<body>
+    <h1>All Notes</h1>
+    <div class="button-container">
+        <a href="add.html" class="btn-link">Add New Note</a>
+        <a href="export.html" class="btn-link">Export</a>
+    </div>
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th class="sortable" data-column="title" data-order="asc">Title</th>
+                <th class="sortable" data-column="description" data-order="asc">Description</th>
+                <th class="sortable" data-column="topics" data-order="asc">Topics</th>
+                <th class="sortable" data-column="levels" data-order="asc">Levels</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="notesTable"></tbody>
+    </table>
+    <script src="script.js"></script>
+    <script>
+        const notesTable = document.getElementById('notesTable');
+        const searchInput = document.getElementById('searchInput');
+
+        const fetchNotes = async () => {
+            // Fetch notes logic here
+        };
+
+        const sortTable = (column, order) => {
+            const rows = Array.from(notesTable.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                const aText = a.querySelector(`td:nth-child(${column})`).textContent.trim().toLowerCase();
+                const bText = b.querySelector(`td:nth-child(${column})`).textContent.trim().toLowerCase();
+                return order === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+            notesTable.innerHTML = '';
+            rows.forEach(row => notesTable.appendChild(row));
+        };
+
+        document.querySelectorAll('th.sortable').forEach(header => {
+            header.addEventListener('click', () => {
+                const column = Array.from(header.parentNode.children).indexOf(header) + 1;
+                const order = header.getAttribute('data-order');
+                sortTable(column, order);
+                header.setAttribute('data-order', order === 'asc' ? 'desc' : 'asc');
+            });
+        });
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase();
+            const rows = notesTable.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td'));
+                const matches = cells.some(cell => cell.textContent.toLowerCase().includes(query));
+                row.style.display = matches ? '' : 'none';
+            });
+        });
+
+        fetchNotes();
+    </script>
+</body>
+</html>

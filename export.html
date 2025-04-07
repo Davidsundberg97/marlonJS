@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            display: flex;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            margin-right: 300px; /* Reserve space for the compose email window */
+        }
+        h1 {
+            color: #333;
+        }
+        a {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        th.sortable {
+            cursor: pointer;
+        }
+        th.sortable:hover {
+            background-color: #0056b3;
+        }
+        #copyButton {
+            display: none;
+            position: absolute;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #copyButton:hover {
+            background-color: #0056b3;
+        }
+        #emailWindow {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            padding: 20px;
+            background-color: white;
+            border-left: 1px solid #ddd;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+        #emailWindow h2 {
+            margin-top: 0;
+        }
+        #emailWindow input, #emailWindow textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #emailWindow textarea {
+            height: calc(100% - 140px); /* Adjust height to fit within the window */
+            resize: none;
+        }
+        .note-title {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            background: none; /* Remove button-like background */
+            border: none; /* Remove button-like border */
+            padding: 0; /* Remove padding */
+            font: inherit; /* Inherit font styles */
+        }
+        .note-title:hover {
+            color: darkblue;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>Export Notes</h1>
+        <a href="index.html">Back to All Notes</a>
+        <table>
+            <thead>
+                <tr>
+                    <th class="sortable" data-column="title" data-order="asc">Title</th>
+                    <th class="sortable" data-column="description" data-order="asc">Description</th>
+                    <th class="sortable" data-column="topics" data-order="asc">Topics</th>
+                    <th class="sortable" data-column="levels" data-order="asc">Levels</th>
+                </tr>
+            </thead>
+            <tbody id="notesTable"></tbody>
+        </table>
+        <button id="copyButton">Copy</button>
+    </div>
+    <div id="emailWindow">
+        <h2>Compose Email</h2>
+        <input type="email" id="emailTo" placeholder="To" required>
+        <input type="text" id="emailSubject" placeholder="Subject" required>
+        <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
+    </div>
+    <script>
+        const notesTable = document.getElementById('notesTable');
+        const copyButton = document.getElementById('copyButton');
+        const emailContent = document.getElementById('emailContent');
+
+        const fetchNotes = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/notes');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const notes = await response.json();
+                notesTable.innerHTML = notes.map(note => `
+                    <tr>
+                        <td style="max-width: 200px; overflow-wrap: break-word;">
+                            ${note.link 
+                                ? `<a href="${note.link}" target="_blank" class="note-title">${note.title || 'Untitled'}</a>` 
+                                : `<span class="note-title">${note.title || 'Untitled'}</span>`}
+                        </td>
+                        <td>${note.description || 'No description'}</td>
+                        <td>${note.topics ? note.topics.split(',').join(', ') : 'No topics'}</td>
+                        <td>${note.levels ? note.levels.split(',').join(', ') : 'No levels'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching notes:', error);
+                alert('Failed to fetch notes. Please try again.');
+            }
+        };
+
+        const sortTable = (column, order) => {
+            const rows = Array.from(notesTable.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                const aText = a.querySelector(`td:nth-child(${column})`).textContent.trim().toLowerCase();
+                const bText = b.querySelector(`td:nth-child(${column})`).textContent.trim().toLowerCase();
+                return order === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+            notesTable.innerHTML = '';
+            rows.forEach(row => notesTable.appendChild(row));
+        };
+
+        document.querySelectorAll('th.sortable').forEach(header => {
+            header.addEventListener('click', () => {
+                const column = Array.from(header.parentNode.children).indexOf(header) + 1;
+                const order = header.getAttribute('data-order');
+                sortTable(column, order);
+                header.setAttribute('data-order', order === 'asc' ? 'desc' : 'asc');
+            });
+        });
+
+        document.addEventListener('mouseup', (event) => {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+
+            if (selectedText) {
+                const { clientX: x, clientY: y } = event;
+                copyButton.style.left = `${x}px`;
+                copyButton.style.top = `${y}px`;
+                copyButton.style.display = 'block';
+
+                copyButton.onclick = () => {
+                    emailContent.value += `${selectedText}\n\n`;
+                    copyButton.style.display = 'none';
+                    selection.removeAllRanges(); // Clear the selection
+                };
+            } else {
+                copyButton.style.display = 'none';
+            }
+        });
+
+        fetchNotes();
+    </script>
+</body>
+</html>
