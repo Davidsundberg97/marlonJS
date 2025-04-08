@@ -1,0 +1,61 @@
+clients:
+  - id: 1
+    name: John Doe
+    email: john.doe@example.com
+    phone: "+1234567890"
+    address: "123 Main St, Springfield"
+  - id: 2
+    name: Jane Smith
+    email: jane.smith@example.com
+    phone: "+9876543210"
+    address: "456 Elm St, Metropolis"
+  - id: 3
+    name: Alice Johnson
+    email: alice.johnson@example.com
+    phone: "+1122334455"
+    address: "789 Oak St, Gotham"
+  - id: 4
+    name: Bob Brown
+    email: bob.brown@example.com
+    phone: "+2233445566"
+    address: "321 Pine St, Star City"
+  - id: 5
+    name: Charlie Davis
+    email: charlie.davis@example.com
+    phone: "+3344556677"
+    address: "654 Maple St, Central City"
+  - id: 6
+    name: Diana Prince
+    email: diana.prince@example.com
+    phone: "+4455667788"
+    address: "987 Cedar St, Themyscira"
+  - id: 7
+    name: Edward Wilson
+    email: edward.wilson@example.com
+    phone: "+5566778899"
+    address: "159 Birch St, Smallville"
+  - id: 8
+    name: Fiona Green
+    email: fiona.green@example.com
+    phone: "+6677889900"
+    address: "753 Willow St, Atlantis"
+  - id: 9
+    name: George White
+    email: george.white@example.com
+    phone: "+7788990011"
+    address: "852 Aspen St, Wakanda"
+  - id: 10
+    name: Hannah Black
+    email: hannah.black@example.com
+    phone: "+8899001122"
+    address: "951 Redwood St, El Dorado"
+  - id: 11
+    name: Ian Gray
+    email: ian.gray@example.com
+    phone: "+9900112233"
+    address: "357 Cypress St, Emerald City"
+  - id: 12
+    name: Julia Blue
+    email: julia.blue@example.com
+    phone: "+0011223344"
+    address: "258 Spruce St, Neverland"

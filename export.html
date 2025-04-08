@@ -111,6 +111,23 @@
         .note-title:hover {
             color: darkblue;
         }
+        #suggestions {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        #suggestions div {
+            padding: 10px;
+            cursor: pointer;
+        }
+        #suggestions div:hover {
+            background-color: #f1f1f1;
+        }
     </style>
 </head>
 <body>
@@ -132,14 +149,68 @@
     </div>
     <div id="emailWindow">
         <h2>Compose Email</h2>
-        <input type="email" id="emailTo" placeholder="To" required>
+        <input type="email" id="emailTo" placeholder="To" required autocomplete="off">
+        <div id="suggestions"></div>
         <input type="text" id="emailSubject" placeholder="Subject" required>
         <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script>
         const notesTable = document.getElementById('notesTable');
         const copyButton = document.getElementById('copyButton');
         const emailContent = document.getElementById('emailContent');
+        const emailTo = document.getElementById('emailTo');
+        const suggestions = document.getElementById('suggestions');
+
+        let clients = [];
+
+        const loadClients = async () => {
+            try {
+                const response = await fetch('./clients.yaml');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const yamlText = await response.text();
+                const parsedData = jsyaml.load(yamlText);
+                clients = parsedData.clients || [];
+            } catch (error) {
+                console.error('Error loading clients:', error);
+            }
+        };
+
+        const showSuggestions = (query) => {
+            suggestions.innerHTML = '';
+            if (!query) {
+                suggestions.style.display = 'none';
+                return;
+            }
+            const filteredClients = clients.filter(client =>
+                client.name.toLowerCase().includes(query.toLowerCase())
+            );
+            if (filteredClients.length === 0) {
+                suggestions.style.display = 'none';
+                return;
+            }
+            filteredClients.forEach(client => {
+                const suggestion = document.createElement('div');
+                suggestion.textContent = `${client.name} (${client.email})`;
+                suggestion.addEventListener('click', () => {
+                    emailTo.value = client.email;
+                    suggestions.style.display = 'none';
+                });
+                suggestions.appendChild(suggestion);
+            });
+            suggestions.style.display = 'block';
+        };
+
+        emailTo.addEventListener('input', () => {
+            const query = emailTo.value.trim();
+            showSuggestions(query);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!emailTo.contains(event.target) && !suggestions.contains(event.target)) {
+                suggestions.style.display = 'none';
+            }
+        });
 
         const fetchNotes = async () => {
             try {
@@ -205,6 +276,7 @@
             }
         });
 
+        loadClients();
         fetchNotes();
     </script>
 </body>
