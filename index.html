@@ -38,6 +38,12 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
+        .table-container {
+            transition: margin-right 0.3s ease;
+        }
+        .table-container.expanded {
+            margin-right: 300px; /* Reserve space for the compose email window */
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -73,30 +79,98 @@
         .note-title:hover {
             color: darkblue;
         }
+        #emailWindow {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            padding: 20px;
+            background-color: white;
+            border-left: 1px solid #ddd;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+        #emailWindow h2 {
+            margin-top: 0;
+        }
+        #emailWindow input, #emailWindow textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #emailWindow textarea {
+            height: calc(100% - 140px); /* Adjust height to fit within the window */
+            resize: none;
+        }
+        #suggestions {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        #suggestions div {
+            padding: 10px;
+            cursor: pointer;
+        }
+        #suggestions div:hover {
+            background-color: #f1f1f1;
+        }
+        #copyButton {
+            display: none;
+            position: absolute;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #copyButton:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <h1>All Notes</h1>
     <div class="button-container">
         <a href="add.html" class="btn-link">Add New Note</a>
-        <a href="export.html" class="btn-link">Export</a>
+        <button id="toggleEmailWindow" class="btn-link">Export</button>
     </div>
     <div class="search-container">
         <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
     </div>
-    <table>
-        <thead>
-            <tr>
-                <th class="sortable" data-column="title" data-order="asc">Title</th>
-                <th class="sortable" data-column="description" data-order="asc">Description</th>
-                <th class="sortable" data-column="topics" data-order="asc">Topics</th>
-                <th class="sortable" data-column="levels" data-order="asc">Levels</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="notesTable"></tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="sortable" data-column="title" data-order="asc">Title</th>
+                    <th class="sortable" data-column="description" data-order="asc">Description</th>
+                    <th class="sortable" data-column="topics" data-order="asc">Topics</th>
+                    <th class="sortable" data-column="levels" data-order="asc">Levels</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="notesTable"></tbody>
+        </table>
+    </div>
+    <div id="emailWindow" style="display: none;">
+        <h2>Compose Email</h2>
+        <input type="email" id="emailTo" placeholder="To" required autocomplete="off">
+        <div id="suggestions"></div>
+        <input type="text" id="emailSubject" placeholder="Subject" required>
+        <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
+    </div>
+    <button id="copyButton">Copy</button>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script>
         const notesTable = document.getElementById('notesTable');
         const searchInput = document.getElementById('searchInput');
@@ -135,6 +209,96 @@
             });
         });
 
+        const emailTo = document.getElementById('emailTo');
+        const suggestions = document.getElementById('suggestions');
+        const emailContent = document.getElementById('emailContent');
+        let clients = [];
+
+        const loadClients = async () => {
+            try {
+                const response = await fetch('./clients.yaml');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const yamlText = await response.text();
+                const parsedData = jsyaml.load(yamlText);
+                clients = parsedData.clients || [];
+            } catch (error) {
+                console.error('Error loading clients:', error);
+            }
+        };
+
+        const showSuggestions = (query) => {
+            suggestions.innerHTML = '';
+            if (!query) {
+                suggestions.style.display = 'none';
+                return;
+            }
+            const filteredClients = clients.filter(client =>
+                client.name.toLowerCase().includes(query.toLowerCase())
+            );
+            if (filteredClients.length === 0) {
+                suggestions.style.display = 'none';
+                return;
+            }
+            filteredClients.forEach(client => {
+                const suggestion = document.createElement('div');
+                suggestion.textContent = `${client.name} (${client.email})`;
+                suggestion.addEventListener('click', () => {
+                    emailTo.value = client.email;
+                    suggestions.style.display = 'none';
+                });
+                suggestions.appendChild(suggestion);
+            });
+            suggestions.style.display = 'block';
+        };
+
+        emailTo.addEventListener('input', () => {
+            const query = emailTo.value.trim();
+            showSuggestions(query);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!emailTo.contains(event.target) && !suggestions.contains(event.target)) {
+                suggestions.style.display = 'none';
+            }
+        });
+
+        const copyButton = document.getElementById('copyButton');
+
+        document.addEventListener('mouseup', (event) => {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+
+            if (selectedText) {
+                const { clientX: x, clientY: y } = event;
+                copyButton.style.left = `${x}px`;
+                copyButton.style.top = `${y}px`;
+                copyButton.style.display = 'block';
+
+                copyButton.onclick = () => {
+                    emailContent.value += `${selectedText}\n\n`;
+                    copyButton.style.display = 'none';
+                    selection.removeAllRanges(); // Clear the selection
+                };
+            } else {
+                copyButton.style.display = 'none';
+            }
+        });
+
+        const toggleEmailWindowButton = document.getElementById('toggleEmailWindow');
+        const emailWindow = document.getElementById('emailWindow');
+        const tableContainer = document.querySelector('.table-container');
+
+        toggleEmailWindowButton.addEventListener('click', () => {
+            if (emailWindow.style.display === 'none') {
+                emailWindow.style.display = 'block';
+                tableContainer.classList.add('expanded');
+            } else {
+                emailWindow.style.display = 'none';
+                tableContainer.classList.remove('expanded');
+            }
+        });
+
+        loadClients();
         fetchNotes();
     </script>
 </body>
