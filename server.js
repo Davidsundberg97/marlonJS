@@ -27,7 +27,8 @@ const db = new sqlite3.Database('./notes.db', (err) => {
                 levels TEXT NOT NULL,
                 content TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                selection INTEGER DEFAULT 0
             )
         `, (err) => {
             if (err) {
@@ -110,6 +111,27 @@ app.put('/notes/:id', (req, res) => {
                 res.status(404).json({ error: 'Note not found.' });
             } else {
                 res.json({ message: 'Note updated successfully.' });
+            }
+        }
+    );
+});
+
+// Update selection of a note by ID
+app.put('/notes/:id/selection', (req, res) => {
+    const { id } = req.params;
+    const { selection } = req.body;
+
+    db.run(
+        `UPDATE notes SET selection = ? WHERE id = ?`,
+        [selection ? 1 : 0, id],
+        function (err) {
+            if (err) {
+                console.error('Error updating selection:', err.message);
+                res.status(500).json({ error: err.message });
+            } else if (this.changes === 0) {
+                res.status(404).json({ error: 'Note not found.' });
+            } else {
+                res.json({ message: 'Selection updated successfully.' });
             }
         }
     );

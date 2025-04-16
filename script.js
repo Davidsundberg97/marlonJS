@@ -1,5 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     const notesTable = document.getElementById('notesTable');
+    const emailContent = document.getElementById('emailContent');
+
+    const updateSelection = async (id, isSelected) => {
+        try {
+            await fetch(`http://localhost:3000/notes/${id}/selection`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selection: isSelected }),
+            });
+
+            if (isSelected) {
+                const response = await fetch(`http://localhost:3000/notes/${id}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const note = await response.json();
+                emailContent.value += `Title: ${note.title}\nLink: ${note.link}\nDescription: ${note.description}\n\n`;
+            } else {
+                const response = await fetch(`http://localhost:3000/notes/${id}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const note = await response.json();
+                const noteText = `Title: ${note.title}\nLink: ${note.link}\nDescription: ${note.description}\n\n`;
+                emailContent.value = emailContent.value.replace(noteText, '');
+            }
+        } catch (error) {
+            console.error('Error updating selection:', error);
+            alert('Failed to update selection. Please try again.');
+        }
+    };
 
     const fetchNotes = async () => {
         try {
@@ -9,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const notes = await response.json();
             notesTable.innerHTML = notes.map(note => `
                 <tr>
+                    <td><input type="checkbox" onchange="updateSelection(${note.id}, this.checked)" ${note.selection ? 'checked' : ''}></td>
                     <td style="max-width: 200px; overflow-wrap: break-word;">
                         ${note.link 
                             ? `<a href="${note.link}" target="_blank" class="note-title">${note.title || 'Untitled'}</a>` 
@@ -29,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.updateSelection = updateSelection; // Ensure the function is globally accessible
     window.editNote = (id) => {
         // Redirect to edit.html with the note ID as a query parameter
         window.location.href = `edit.html?id=${id}`;

@@ -7,10 +7,72 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
             background-color: #f9f9f9;
         }
-        h1 {
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            width: 50%;
+            border-right: 1px solid #ddd;
+        }
+        .compose-email {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+        .compose-email h2 {
+            margin-top: 0;
+        }
+        .compose-email input, .compose-email textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .compose-email textarea {
+            height: calc(100% - 140px); /* Adjust height to fit within the window */
+            resize: none;
+        }
+        .compose-email #suggestions {
+            position: relative;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .compose-email #suggestions div {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .compose-email #suggestions div:hover {
+            background-color: #f1f1f1;
+        }
+        .client-resource-history {
+            flex: 1;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+        .notes-section {
+            width: 50%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .notes-section h1 {
             color: #333;
         }
         .button-container {
@@ -37,12 +99,6 @@
             font-size: 16px;
             border: 1px solid #ddd;
             border-radius: 5px;
-        }
-        .table-container {
-            transition: margin-right 0.3s ease;
-        }
-        .table-container.expanded {
-            margin-right: 300px; /* Reserve space for the compose email window */
         }
         table {
             width: 100%;
@@ -79,78 +135,39 @@
         .note-title:hover {
             color: darkblue;
         }
-        #emailWindow {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 100%;
-            padding: 20px;
-            background-color: white;
-            border-left: 1px solid #ddd;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-        }
-        #emailWindow h2 {
-            margin-top: 0;
-        }
-        #emailWindow input, #emailWindow textarea {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        #emailWindow textarea {
-            height: calc(100% - 140px); /* Adjust height to fit within the window */
-            resize: none;
-        }
-        #suggestions {
-            position: absolute;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            max-height: 150px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        #suggestions div {
-            padding: 10px;
-            cursor: pointer;
-        }
-        #suggestions div:hover {
-            background-color: #f1f1f1;
-        }
-        #copyButton {
-            display: none;
-            position: absolute;
-            padding: 10px 15px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #copyButton:hover {
-            background-color: #0056b3;
-        }
     </style>
 </head>
 <body>
-    <h1>All Notes</h1>
-    <div class="button-container">
-        <a href="add.html" class="btn-link">Add New Note</a>
-        <button id="toggleEmailWindow" class="btn-link">Export</button>
+    <div class="left-section">
+        <div class="compose-email">
+            <h2>Compose Email</h2>
+            <input type="email" id="emailTo" placeholder="To" required autocomplete="off">
+            <div id="suggestions"></div>
+            <input type="text" id="emailSubject" placeholder="Subject" required>
+            <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
+            <button id="sendEmailButton" style="margin-top: 10px; padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Send
+            </button>
+        </div>
+        <div class="client-resource-history">
+            <h3 style="margin-top: 0;">Client Resource History</h3>
+            <ul id="resourceHistoryList" style="list-style-type: none; padding: 0; margin: 0;">
+                <!-- Resource history items will be dynamically added here -->
+            </ul>
+        </div>
     </div>
-    <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
-    </div>
-    <div class="table-container">
+    <div class="notes-section">
+        <h1>All Notes</h1>
+        <div class="button-container">
+            <a href="add.html" class="btn-link">Add New Note</a>
+        </div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
+        </div>
         <table>
             <thead>
                 <tr>
+                    <th>Select</th>
                     <th class="sortable" data-column="title" data-order="asc">Title</th>
                     <th class="sortable" data-column="description" data-order="asc">Description</th>
                     <th class="sortable" data-column="topics" data-order="asc">Topics</th>
@@ -161,19 +178,15 @@
             <tbody id="notesTable"></tbody>
         </table>
     </div>
-    <div id="emailWindow" style="display: none;">
-        <h2>Compose Email</h2>
-        <input type="email" id="emailTo" placeholder="To" required autocomplete="off">
-        <div id="suggestions"></div>
-        <input type="text" id="emailSubject" placeholder="Subject" required>
-        <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
-    </div>
-    <button id="copyButton">Copy</button>
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script>
         const notesTable = document.getElementById('notesTable');
         const searchInput = document.getElementById('searchInput');
+        const emailTo = document.getElementById('emailTo');
+        const suggestions = document.getElementById('suggestions');
+        const emailContent = document.getElementById('emailContent');
+        let clients = [];
 
         const fetchNotes = async () => {
             // Fetch notes logic here
@@ -208,11 +221,6 @@
                 row.style.display = matches ? '' : 'none';
             });
         });
-
-        const emailTo = document.getElementById('emailTo');
-        const suggestions = document.getElementById('suggestions');
-        const emailContent = document.getElementById('emailContent');
-        let clients = [];
 
         const loadClients = async () => {
             try {
@@ -259,42 +267,6 @@
         document.addEventListener('click', (event) => {
             if (!emailTo.contains(event.target) && !suggestions.contains(event.target)) {
                 suggestions.style.display = 'none';
-            }
-        });
-
-        const copyButton = document.getElementById('copyButton');
-
-        document.addEventListener('mouseup', (event) => {
-            const selection = window.getSelection();
-            const selectedText = selection.toString().trim();
-
-            if (selectedText) {
-                const { clientX: x, clientY: y } = event;
-                copyButton.style.left = `${x}px`;
-                copyButton.style.top = `${y}px`;
-                copyButton.style.display = 'block';
-
-                copyButton.onclick = () => {
-                    emailContent.value += `${selectedText}\n\n`;
-                    copyButton.style.display = 'none';
-                    selection.removeAllRanges(); // Clear the selection
-                };
-            } else {
-                copyButton.style.display = 'none';
-            }
-        });
-
-        const toggleEmailWindowButton = document.getElementById('toggleEmailWindow');
-        const emailWindow = document.getElementById('emailWindow');
-        const tableContainer = document.querySelector('.table-container');
-
-        toggleEmailWindowButton.addEventListener('click', () => {
-            if (emailWindow.style.display === 'none') {
-                emailWindow.style.display = 'block';
-                tableContainer.classList.add('expanded');
-            } else {
-                emailWindow.style.display = 'none';
-                tableContainer.classList.remove('expanded');
             }
         });
 
