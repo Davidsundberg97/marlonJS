@@ -135,48 +135,70 @@
         .note-title:hover {
             color: darkblue;
         }
+        .resizer {
+            width: 5px;
+            background-color: #ddd;
+            cursor: col-resize;
+            position: relative;
+            z-index: 10;
+        }
+        .resizer:hover {
+            background-color: #bbb;
+        }
     </style>
 </head>
 <body>
-    <div class="left-section">
-        <div class="compose-email">
-            <h2>Compose Email</h2>
-            <input type="email" id="emailTo" placeholder="To" required autocomplete="off">
-            <div id="suggestions"></div>
-            <input type="text" id="emailSubject" placeholder="Subject" required>
-            <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
-            <button id="sendEmailButton" style="margin-top: 10px; padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Send
-            </button>
+    <!-- Adjust the header to span the full width of the screen -->
+    <header style="width: 100%; text-align: center; padding: 10px; background-color: #007BFF; color: white; font-size: 24px; font-weight: bold; position: fixed; top: 0; left: 0; z-index: 1000;">
+        EasyPad
+    </header>
+    <!-- Wrap the content in a container to ensure proper alignment -->
+    <div style="margin-top: 50px; width: 100%; display: flex; flex-direction: row; height: calc(100vh - 50px);">
+        <div class="left-section">
+            <div class="compose-email">
+                <h2>Compose</h2>
+                <input type="email" id="emailTo" placeholder="Client" required autocomplete="off">
+                <div id="suggestions"></div>
+                <input type="text" id="emailSubject" placeholder="Subject" required>
+                <textarea id="emailContent" placeholder="Selected text will appear here..."></textarea>
+                <div id="emailPreview" style="margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8f9fa; overflow-y: auto;">
+                    <h3>Email Preview</h3>
+                    <div id="previewContent" style="white-space: pre-wrap; font-family: Arial, sans-serif;"></div>
+                </div>
+                <button id="sendEmailButton" style="margin-top: 10px; padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Send
+                </button>
+            </div>
+            <div class="client-resource-history">
+                <h3 style="margin-top: 0;">Client Resource History</h3>
+                <ul id="resourceHistoryList" style="list-style-type: none; padding: 0; margin: 0;">
+                    <!-- Resource history items will be dynamically added here -->
+                </ul>
+            </div>
         </div>
-        <div class="client-resource-history">
-            <h3 style="margin-top: 0;">Client Resource History</h3>
-            <ul id="resourceHistoryList" style="list-style-type: none; padding: 0; margin: 0;">
-                <!-- Resource history items will be dynamically added here -->
-            </ul>
+        <div class="resizer"></div>
+        <div class="notes-section">
+            <h1>Resources</h1>
+            <div class="button-container">
+                <a href="add.html" class="btn-link">Add New Note</a>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th class="sortable" data-column="title" data-order="asc">Title</th>
+                        <th class="sortable" data-column="description" data-order="asc">Description</th>
+                        <th class="sortable" data-column="topics" data-order="asc">Topics</th>
+                        <th class="sortable" data-column="levels" data-order="asc">Levels</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="notesTable"></tbody>
+            </table>
         </div>
-    </div>
-    <div class="notes-section">
-        <h1>All Notes</h1>
-        <div class="button-container">
-            <a href="add.html" class="btn-link">Add New Note</a>
-        </div>
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search notes...">
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Select</th>
-                    <th class="sortable" data-column="title" data-order="asc">Title</th>
-                    <th class="sortable" data-column="description" data-order="asc">Description</th>
-                    <th class="sortable" data-column="topics" data-order="asc">Topics</th>
-                    <th class="sortable" data-column="levels" data-order="asc">Levels</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="notesTable"></tbody>
-        </table>
     </div>
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -186,6 +208,8 @@
         const emailTo = document.getElementById('emailTo');
         const suggestions = document.getElementById('suggestions');
         const emailContent = document.getElementById('emailContent');
+        const previewContent = document.getElementById('previewContent');
+        const resourceHistoryList = document.getElementById('resourceHistoryList');
         let clients = [];
 
         const fetchNotes = async () => {
@@ -269,6 +293,63 @@
                 suggestions.style.display = 'none';
             }
         });
+
+        const addResourceToCompose = (description, title, link) => {
+            const dashPoint = `- ${description} - ${title} (${link})\n`;
+            emailContent.value += dashPoint;
+        };
+
+        emailContent.addEventListener('input', () => {
+            const formattedContent = emailContent.value
+                .replace(/<b>(.*?)<\/b>/g, '<strong>$1</strong>') // Convert <b> to <strong>
+                .replace(/<i>(.*?)<\/i>/g, '<em>$1</em>') // Convert <i> to <em>
+                .replace(/\n/g, '<br>'); // Convert newlines to <br>
+            previewContent.innerHTML = formattedContent;
+        });
+
+        notesTable.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.tagName === 'TD' || target.classList.contains('note-title')) {
+                const row = target.closest('tr');
+                const description = row.querySelector('td:nth-child(3)')?.textContent.trim() || 'No description';
+                const title = row.querySelector('td:nth-child(2)')?.textContent.trim() || 'No title';
+                const link = target.getAttribute('data-link') || '#'; // Assuming the link is stored in a data attribute
+                const dashPoint = `- ${description} - ${title} (${link})\n`;
+                emailContent.value += dashPoint; // Append the text to the email content
+            }
+        });
+
+        const resizer = document.querySelector('.resizer');
+        const leftSection = document.querySelector('.left-section');
+        const notesSection = document.querySelector('.notes-section');
+
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        });
+
+        const resize = (e) => {
+            if (!isResizing) return;
+            const containerWidth = resizer.parentElement.offsetWidth;
+            const leftWidth = e.clientX / containerWidth * 100;
+            const rightWidth = 100 - leftWidth;
+
+            if (leftWidth > 10 && rightWidth > 10) { // Prevent sections from becoming too small
+                leftSection.style.width = `${leftWidth}%`;
+                notesSection.style.width = `${rightWidth}%`;
+            }
+        };
+
+        const stopResize = () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+        };
 
         loadClients();
         fetchNotes();

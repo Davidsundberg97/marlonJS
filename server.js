@@ -49,7 +49,12 @@ app.get('/notes', (req, res) => {
             res.status(500).json({ error: err.message });
         } else {
             console.log('Fetched Notes from Database:', rows);
-            res.json(rows);
+            // Format the notes with a dash before sending them to the client
+            const formattedRows = rows.map(row => ({
+                ...row,
+                formatted: `- ${row.description} - ${row.title} (${row.link})`
+            }));
+            res.json(formattedRows);
         }
     });
 });

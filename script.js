@@ -14,13 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`http://localhost:3000/notes/${id}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const note = await response.json();
-                emailContent.value += `Title: ${note.title}\nLink: ${note.link}\nDescription: ${note.description}\n\n`;
+                const formattedNote = `• ${note.description} <a href="${note.link}" target="_blank">${note.title}</a>\n`;
+                emailContent.value += formattedNote;
             } else {
                 const response = await fetch(`http://localhost:3000/notes/${id}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const note = await response.json();
-                const noteText = `Title: ${note.title}\nLink: ${note.link}\nDescription: ${note.description}\n\n`;
-                emailContent.value = emailContent.value.replace(noteText, '');
+                const formattedNote = `• ${note.description} <a href="${note.link}" target="_blank">${note.title}</a>\n`;
+                emailContent.value = emailContent.value.replace(formattedNote, '');
             }
         } catch (error) {
             console.error('Error updating selection:', error);
