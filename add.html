@@ -87,6 +87,16 @@
             }
         });
 
+        // Ensure links are properly formatted
+        quill.root.addEventListener('click', (event) => {
+            if (event.target.tagName === 'A') {
+                const href = event.target.getAttribute('href');
+                if (!/^https?:\/\//i.test(href)) {
+                    event.target.setAttribute('href', `https://${href}`);
+                }
+            }
+        });
+
         document.getElementById('noteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = document.getElementById('title').value.trim();
