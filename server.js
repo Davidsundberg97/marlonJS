@@ -126,6 +126,10 @@ app.put('/notes/:id/selection', (req, res) => {
     const { id } = req.params;
     const { selection } = req.body;
 
+    if (typeof selection !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid selection value. Must be a boolean.' });
+    }
+
     db.run(
         `UPDATE notes SET selection = ? WHERE id = ?`,
         [selection ? 1 : 0, id],

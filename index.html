@@ -188,7 +188,12 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="notesTable"></tbody>
+                <tbody id="notesTable">
+                    <tr>
+                        <td><input type="checkbox" onchange="updateSelection(note.id, this.checked)"></td>
+                        <!-- ...existing code... -->
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -306,6 +311,9 @@
             }
         });
 
+        // Make the Quill editor globally accessible
+        window.quill = quill;
+
         // Ensure links are properly formatted
         quill.root.addEventListener('click', (event) => {
             if (event.target.tagName === 'A') {
@@ -318,7 +326,20 @@
 
         document.getElementById('copyButton').addEventListener('click', () => {
             const content = quill.root.innerHTML.trim();
-            navigator.clipboard.writeText(content).then(() => {
+
+            // Convert HTML content to plain text while preserving links and lists
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+
+            // Process links
+            tempDiv.querySelectorAll('a').forEach(link => {
+                link.textContent += ` (${link.href})`;
+            });
+
+            // Extract plain text
+            const plainText = tempDiv.textContent || tempDiv.innerText;
+
+            navigator.clipboard.writeText(plainText).then(() => {
                 alert('Content copied to clipboard!');
             }).catch(err => {
                 console.error('Error copying to clipboard:', err);
